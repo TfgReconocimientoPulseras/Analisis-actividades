@@ -1,113 +1,81 @@
 import pandas as pd
 import argparse
-import time
+
 import numpy as np
 from datetime import datetime
-from scipy.linalg import norm
-from scipy.fftpack import fft
+
+from numpy.fft import fft, ifft, rfft, irfft
+from numpy import sqrt, mean, absolute
 
 def corr(df):
     cor=df.corr()
-    return pd.DataFrame({'xy': [cor['accel-x']['accel-y']],'xz':[cor['accel-x']['accel-y']], 'yz':[cor['accel-y']['accel-x']]})
+    return pd.DataFrame({'xy': [cor['accel-x']['accel-y']],'xz':[cor['accel-x']['accel-z']], 'yz':[cor['accel-y']['accel-z']]})
+def tfft(df):
+     X=fft(df['accel-x'])
+     Y=fft(df['accel-y'])
+     Z=fft(df['accel-z'])  
+     return pd.DataFrame({'x': [rms_flat(X)/sqrt(len(df))],'y': [rms_flat(Y)/sqrt(len(df))], 'z':[rms_flat(Z)/sqrt(len(df))]})
+    
+def rms_flat(a):
+   
+    return sqrt(mean(absolute(a)**2))    
     
 def getStatisticsValues(nombre, numeroFicheros, time1=1, overlap=500):
-    dfOut = pd.DataFrame()
-    
-    dfRollingMean = pd.DataFrame(columns=['avg_gyro-alpha', 'avg_gyro-beta', 'avg_gyro-gamma', 'avg_ax', 'avg_ay', 'avg_az']);
-
-    dfRollingMin = pd.DataFrame(columns=['min_gyro-alpha', 'min_gyro-beta', 'min_gyro-gamma', 'min_ax', 'min_ay', 'min_az']);
-        
-    dfRollingMax = pd.DataFrame(columns=['max_gyro-alpha', 'max_gyro-beta', 'max_gyro-gamma', 'max_ax', 'max_ay', 'max_az']);
-    
-    dfRollingVar = pd.DataFrame(columns=['var_gyro-alpha', 'var_gyro-beta', 'var_gyro-gamma', 'var_ax', 'var_ay', 'var_az']);
-    
-    dfRollingFft = pd.DataFrame(columns=['fft_gyro-alpha', 'fft_gyro-beta', 'fft_gyro-gamma', 'fft_ax', 'fft_ay', 'fft_az']);
-    #dfRollingFft = pd.DataFrame(columns=['fft_gyro-alpha'])
-    dfRollingStd = pd.DataFrame(columns=['std_gyro-alpha', 'std_gyro-beta', 'std_gyro-gamma', 'std_ax', 'std_ay', 'std_az']);
-    
-    #dfRollingCor = pd.DataFrame(columns=['cor_gyro-alpha', 'cor_gyro-beta', 'cor_gyro-gamma', 'cor_ax', 'cor_ay', 'cor_az']);
-    dfRollingCor = pd.DataFrame(columns=['xy','xz','yz'])
-    dfRollingIrq = pd.DataFrame(columns=['irq_gyro-alpha', 'irq_gyro-beta', 'irq_gyro-gamma', 'irq_ax', 'irq_ay', 'irq_az']);
-    
-    dfRollingMg = pd.DataFrame(columns=['mg_gyro-alpha', 'mg_gyro-beta', 'mg_gyro-gamma', 'mg_ax', 'mg_ay', 'mg_az']);
-    
-    dfRollingCov = pd.DataFrame(columns=['cov_gyro-alpha', 'cov_gyro-beta', 'cov_gyro-gamma', 'cov_ax', 'cov_ay', 'cov_az']);
-    
-    dfRollingMed = pd.DataFrame(columns=['med_gyro-alpha', 'med_gyro-beta', 'med_gyro-gamma', 'med_ax', 'med_ay', 'med_az']);
-    
-    #dfOut = dfRollingMean.T.append(dfRollingVar.T).append(dfRollingStd.T)
-    dfOut = dfRollingVar.T.append(dfRollingStd.T).append(dfRollingMax.T).append(dfRollingMin.T).append(dfRollingMean.T).append(dfRollingMed.T)
-    dfOut = dfOut.T    
+    df_final = pd.DataFrame()
+ 
+   
     
     for i in range(0, int (numeroFicheros)):
         df = pd.read_csv("Datos\%s-%d.csv" %(nombre, i+1), sep=';', index_col=0, error_bad_lines=False)
-        dfConjunta = pd.DataFrame();
+       
         df.index = pd.to_datetime(df.index.values, unit='ms')
         
+       
         dfResampleMean = df.resample('%dL' %(overlap)).mean()
-        dfRollingMean = dfResampleMean.rolling('%ds' %(time1)).mean()
-        dfRollingMean.columns = ['avg_gyro-alpha', 'avg_gyro-beta', 'avg_gyro-gamma', 'avg_ax', 'avg_ay', 'avg_az']
+        dfRollingMean = dfResampleMean.rolling('%ds' %(time1)).mean().add_suffix("_avg")
+        df_out=dfRollingMean
 
         dfResampleMin = df.resample('%dL' %(overlap)).min()
-        dfRollingMin = dfResampleMin.rolling('%ds' %(time1)).min()
-        dfRollingMin.columns = ['min_gyro-alpha', 'min_gyro-beta', 'min_gyro-gamma', 'min_ax', 'min_ay', 'min_az']
+        dfRollingMin = dfResampleMin.rolling('%ds' %(time1)).min().add_suffix("_min")
+        df_out=df_out.join(dfRollingMin)
         
         dfResampleMax = df.resample('%dL' %(overlap)).max()
-        dfRollingMax = dfResampleMax.rolling('%ds' %(time1)).max()
-        dfRollingMax.columns = ['max_gyro-alpha', 'max_gyro-beta', 'max_gyro-gamma', 'max_ax', 'max_ay', 'max_az']
+        dfRollingMax = dfResampleMax.rolling('%ds' %(time1)).max().add_suffix("_max")
+        df_out=df_out.join(dfRollingMax)
         
-        dfResampleVar = df.resample('%dL' %(overlap)).var()
-        dfRollingVar = dfResampleVar.rolling('%ds' %(time1)).var()
-        dfRollingVar.columns = ['var_gyro-alpha', 'var_gyro-beta', 'var_gyro-gamma', 'var_ax', 'var_ay', 'var_az']
+#        dfResampleVar = df.resample('%dL' %(overlap)).var()
+#        dfRollingVar = dfResampleVar.rolling('%ds' %(time1)).var()
+#        dfRollingVar.columns = ['var_gyro-alpha', 'var_gyro-beta', 'var_gyro-gamma', 'var_ax', 'var_ay', 'var_az']
       
-#        dfResampleFft = df.resample('%dL' %(overlap)).apply(fft) 
-#        dfRollingFft = dfResampleFft.rolling('%ds' %(time1)).apply(fft)       
-#        dfRollingFft.columns = ['fft_gyro-alpha', 'fft_gyro-beta', 'fft_gyro-gamma', 'fft_ax', 'fft_ay', 'fft_az']
-      
+
         
         
         dfResampleStd = df.resample('%dL' %(overlap)).std()
-        dfRollingStd = dfResampleStd.rolling('%ds' %(time1)).std()
-        dfRollingStd.columns = ['std_gyro-alpha', 'std_gyro-beta', 'std_gyro-gamma', 'std_ax', 'std_ay', 'std_az']
-#        
-        #dfResampleCor=df.groupby(pd.TimeGrouper('%dL' %(overlap))).apply(corr).reset_index(1,drop=True)
-        #print (pairs_cor)
-        #dfResampleCor = df.resample('%dL' %(overlap)).apply(corr) 
-       # print(type(dfResampleCor))
-        #dfRollingCor = dfResampleCor.rolling('%ds' %(time1)).apply(corr)
-       # print(dfRollingCor)
-        #dfRollingCor = df.rolling('%ds' %(time1)).corr(df['accel-x'])       
-        #dfRollingCor.columns = ['cor_gyro-alpha', 'cor_gyro-beta', 'cor_gyro-gamma', 'cor_ax', 'cor_ay', 'cor_az']
-        #dfRollingCor.columns = ['xy','xz','yz']
+        dfRollingStd = dfResampleStd.rolling('%ds' %(time1)).std().add_suffix("_std")
+        df_out=df_out.join(dfRollingStd)
+       
+        dfResampleCor=df.groupby(pd.TimeGrouper('%dL' %(overlap))).apply(corr).reset_index(1,drop=True).add_suffix("_cor")       
+        df_out=df_out.join(dfResampleCor)
+       
         
-        dfResampleIrq = df.rolling('%dL' %(overlap)).quantile(0.75)
-        dfRollingIrq = dfResampleIrq.rolling('%ds' %(time1)).quantile(0.75)
-        dfRollingIrq.columns = ['irq_gyro-alpha', 'irq_gyro-beta', 'irq_gyro-gamma', 'irq_ax', 'irq_ay', 'irq_az']
-                
-#        dfResampleMg = df.resample('%dL' %(overlap)).apply(norm())
-#        dfRollingMg = dfResampleMg.rolling('%ds' %(time1)).apply(norm())
-#        dfRollingMg.columns = ['mg_gyro-alpha', 'mg_gyro-beta', 'mg_gyro-gamma', 'mg_ax', 'mg_ay', 'mg_az']
+        dfResamplefft=df.groupby(pd.TimeGrouper('%dL' %(overlap))).apply(tfft).reset_index(1,drop=True).add_suffix("_fft")
+        df_out=df_out.join(dfResamplefft)
         
-        dfResampleCov = df.rolling('%dL' %(overlap)).cov(df['accel-x'])
-        dfRollingCov = dfResampleCov.rolling('%ds' %(time1)).cov(df['accel-x'])
-        dfRollingCov.columns = ['cov_gyro-alpha', 'cov_gyro-beta', 'cov_gyro-gamma', 'cov_ax', 'cov_ay', 'cov_az']
-##        
+        
         dfResampleMed = df.resample('%dL' %(overlap)).median()
-        dfRollingMed = dfResampleMed.rolling('%ds' %(time1)).median()
-        dfRollingMed.columns = ['med_gyro-alpha', 'med_gyro-beta', 'med_gyro-gamma', 'med_ax', 'med_ay', 'med_az']
+        dfRollingMed = dfResampleMed.rolling('%ds' %(time1)).median().add_suffix("_med")
+        df_out=df_out.join(dfRollingMed)
+      
         
         
 
-        #dfConjunta = dfRollingMean.T.append(dfRollingVar.T).append(dfRollingStd.T)
-        dfConjunta = dfRollingVar.T.append(dfRollingStd.T).append(dfRollingMax.T).append(dfRollingMin.T).append(dfRollingMean.T).append(dfRollingMed.T)
        
-        dfConjunta = dfConjunta.T
-        dfOut = pd.concat([dfOut, dfConjunta])
-    #print(df.corr)
-    dfOut=dfOut.fillna(dfOut.mean())
+        df_final=df_final.append(df_out)
+     
+    df_final=df_final.fillna(df_final.mean())
     fecha = datetime.now().microsecond
    
-    dfOut.to_csv("analisistfg/%s-procesado-%s.csv" %(nombre, fecha), ';')
+    df_final.to_csv("prueba/%s-procesado-%s.csv" %(nombre, fecha), ';')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Extract features from inputFile and save them in outputFile')
