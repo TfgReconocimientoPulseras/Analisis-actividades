@@ -14,7 +14,7 @@ def tfft(df):
      X=fft(df['accel-x'])
      Y=fft(df['accel-y'])
      Z=fft(df['accel-z'])  
-     return pd.DataFrame({'x': [rms_flat(X)/sqrt(len(df))],'y': [rms_flat(Y)/sqrt(len(df))], 'z':[rms_flat(Z)/sqrt(len(df))]})
+     return pd.DataFrame({'x': [sum(abs(X)**2)/len(df)],'y': [sum(abs(Y)**2)/len(df)], 'z':[sum(abs(Z)**2)/len(df)]})
     
 def rms_flat(a):
    
@@ -75,7 +75,7 @@ def getStatisticsValues(nombre, numeroFicheros, time1=1, overlap=500):
     df_final=df_final.fillna(df_final.mean())
     fecha = datetime.now().microsecond
    
-    df_final.to_csv("prueba/%s-procesado-%s.csv" %(nombre, fecha), ';')
+    df_final.to_csv("val/%s-procesado-%s.csv" %(nombre, fecha), ';')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Extract features from inputFile and save them in outputFile')
