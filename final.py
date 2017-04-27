@@ -12,18 +12,14 @@ def numeroActividad(actividad):
 
     if(actividad=="andar"):
         numero=1
-    elif(actividad=="trotar"):
-        numero=2
     elif(actividad=="barrer"):
-        numero=3
-    elif(actividad=="sentado"):
-        numero=4
+        numero=2
     elif(actividad=="depie"):
-        numero=5
+        numero=3
     elif(actividad=="subirescaleras"):
-        numero=6
+        numero=4
     elif(actividad=="bajarescaleras"):
-        numero=7
+        numero=5
     return numero
                 
     
