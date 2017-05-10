@@ -1,1 +1,1 @@
-class_names=['ANDAR', 'Barrer','Depie','subirEscaleras','bajarEscaleras']
+class_names=[‘andar’, ‘quieto’,’barrer’,’escaleras’]
