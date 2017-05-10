@@ -1,0 +1,1 @@
+class_names=[‘andar’, ‘escaleras’,’quieto’,’barrer’]
