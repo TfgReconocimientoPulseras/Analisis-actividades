@@ -18,6 +18,7 @@ def numeroActividad(actividad):
         numero=3
     elif(actividad=="barrer"):
         numero=4
+  
     return numero
                 
     
@@ -30,13 +31,14 @@ def juntar():
     
      directorioActual=os.getcwd()
      
-     for (path, ficheros, archivos) in walk("./movil"):
+     for (path, ficheros, archivos) in walk("./movil2"):
         for i in  archivos:
             print(i)
-            actividada=i.split('-')
+            actividada=i.split('_')
+           # actividad2=actividada.spilt('-');
             actividad=actividada[1]
             
-            os.chdir(directorioActual+"/movil")
+            os.chdir(directorioActual+"/movil2")
             dfX=pd.DataFrame()
             dfX = pd.read_csv(i, sep=';', index_col=0, error_bad_lines=False)
            
@@ -57,7 +59,7 @@ def juntar():
             for d in range(numeroFilas):
                 lista.append(numero)
                 dfX.index.tolist()
-                listaInformacion.append(actividada[0]+" "+actividada[1]+" "+actividada[3]+" "+indices[d])
+                listaInformacion.append(actividada[0])
                 
             dfY=pd.DataFrame(lista)
             dfI=pd.DataFrame(listaInformacion)
@@ -66,9 +68,9 @@ def juntar():
             dfOutY = pd.concat([dfOutY, dfY])
             dfOutI = pd.concat([dfOutI, dfI])
      os.chdir(directorioActual)
-     dfOutX.to_csv("X_train_movil2.csv",header=None, index=False)
-     dfOutY.to_csv("y_train_movil2.csv",header=None, index=False)
-     dfOutI.to_csv("info_X_train_movil2.csv",header=None, index=False)
+     dfOutX.to_csv("X_train_movil5.csv",header=None, index=False)
+     dfOutY.to_csv("y_train_movil5.csv",header=None, index=False)
+     #dfOutI.to_csv("info_X_val_movil2.csv",header=None, index=False)
             
 if __name__ == "__main__":
     juntar()
