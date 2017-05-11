@@ -10,6 +10,7 @@ En el movil los datos de 13 personas y 4 actividades: barrer, estar quieto, esca
                                      mediana,maximo y minimo.
 * **Informe con ftt,corr**:Los datos son recogidos por la pulsera,se añaden dos medidas nuevas fft y corr en los acelerometros.
                           Los datos se dividen antes de procesarlos en train y validación.
+* **Movil:** Datos recogidos con el movil,nuevas metricas añadidas:media de la fft,fft de scipy,skew,desviacion de la fft,suma de la fft..ect.Se realizan tres prubas: 12 personas de train y 1 de validacion
  ## Script
  * **llamadaAProcesar**: Llama al script ProcesarDatos.py con todos los archivos que se encuentren en la carpeta
  * **ProcesarDatos** : Hace una segmentación de los datos en ventanas y calculas las métricas.
