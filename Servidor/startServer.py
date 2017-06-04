@@ -1,3 +1,6 @@
+import os
+from bottle import post,route, request, static_file, run, template
+
 from bottle import route, run, template
 import os, os.path
 from os import walk
@@ -9,13 +12,51 @@ from numpy import genfromtxt
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.tree import _tree
 
+CONST_DIR_TMP = "./tmp/"
+CONST_DIR_DATOSPROCESADOS = CONST_DIR_TMP + "/tmp/"
+
 @route('/')
 def home():
-	return '<span style="color: gray;"><b>Bienvenido a este experimento de TFG</b></span>!'
+	return template('formUploadFile')
 
-@route('/get/<tree>')
-def index(tree):
-	##Procesamos los datos con las metricas
+
+@post('/subeDatos')
+def subeDatos():
+	upload = request.files.getall('upload')
+
+	
+	save_path = CONST_DIR_TMP
+	
+	if not os.path.exists(save_path):
+		os.makedirs(save_path)
+
+	if not os.path.exists(CONST_DIR_DATOSPROCESADOS):
+		os.makedirs(CONST_DIR_DATOSPROCESADOS)
+
+	for file in upload:
+		name, ext = os.path.splitext(file.filename)
+
+		if ext not in ('.csv'):
+			return 'File extension not allowed.'
+
+		file_path = "{path}/{file}".format(path=save_path, file=file.filename)
+		file.save(file_path)
+
+	return creameClaseArbolString()
+
+
+
+def creameClaseArbolString():
+	###string = """if(hashMap.get("timestamp") >= 0.24858457457){
+	###   return 5;
+	###}	
+	###return 3;"""
+	###
+	###return string
+
+
+
+		##Procesamos los datos con las metricas
 	llamadaAprocesar()
 	juntar()
 	concatenar()
@@ -23,21 +64,18 @@ def index(tree):
 	##creamos el arbol
 	X = genfromtxt("X_train_movil.csv", delimiter=',')
 	y = genfromtxt("y_train_movil.csv", delimiter='')
+	
 	clf = DecisionTreeClassifier(criterion='entropy', max_depth=6, random_state=0, min_samples_split=2, min_samples_leaf=2)
 	clf = clf.fit(X, y)	
+	
 	feature_names=[ 'gyro_alpha_avg','gyro_beta_avg','gyro_gamma_avg','accel_x_avg','accel_y_avg','accel_z_avg','gyro_alpha_min','gyro_beta_min','gyro_gamma_min','accel_x_min','accel_y_min','accel_z_min','gyro_alpha_max','gyro_beta_max','gyro_gamma_max','accel_x_max','accel_y_max','accel_z_max','gyro_alpha_std','gyro_beta_std','gyro_gamma_std','accel_x_std','accel_y_std','accel_z_std','xy_cor','xz_cor','yz_cor','x_fft','y_fft','z_fft','gyro_alpha_med','gyro_beta_med','gyro_gamma_med','accel_x_med','accel_y_med','accel_z_med']
-	codigo = "public void miMetodo(){\n"
+	
+	codigo = "public int miMetodo(HashMap hashMap){\n"
 	codigo = tree_to_code(clf,feature_names, codigo)
 	codigo = codigo + "\n}"
-	print(codigo)
 
-	if str(tree).upper() == "RF":
-		return template('<span style="color: green;"><b>Este es el RF que pides {{name}} </b></span>!', name=codigo)
-	if str(tree).upper() == "TR":
-		return template('<span style="color: red;"><b>Este es el TR que pides {{name}} </b></span>!', name=tree)
-	return template('<span style="color: gray;"><b>No ha pedido algo que exista {{name}} </b></span>!', name=tree)
-	
-	
+	return codigo
+
 def llamadaAprocesar():
 	j = 0;
 	for (path, ficheros, archivos) in walk("./tmp"):
@@ -96,8 +134,7 @@ def juntar():
 	os.chdir(directorioActual)
 	dfOutX.to_csv("X_train_movil.csv",header=None, index=False)
 	dfOutY.to_csv("y_train_movil.csv",header=None, index=False)
-    
-	 
+
 def maximovalor(arr):
     maximo = 0
     for i in range(len(arr)):
@@ -111,14 +148,14 @@ def tree_to_code(tree, feature_names, codigo):
         feature_names[i] if i != _tree.TREE_UNDEFINED else "undefined!"
         for i in tree_.feature
     ]
-    #print "def tree({}):".format(", ".join(feature_names))
 
     def recurse(node, depth, codigo):
+        
         indent = "  " * depth
         if tree_.feature[node] != _tree.TREE_UNDEFINED:
             name = feature_name[node]
             threshold = tree_.threshold[node]
-            codigo = codigo + "if((double)df.get(i, \"{}\") <= {})\n".format(name, threshold)
+            codigo = codigo + "if(hashMap.get(\"{}\") <= {})\n".format(name, threshold)
             codigo = recurse(tree_.children_left[node], depth + 1, codigo)
             codigo = codigo + "else //if({} > {})\n".format(name, threshold)
             codigo = recurse(tree_.children_right[node], depth + 1, codigo)
@@ -147,8 +184,9 @@ def concatenar():
 	outfileNuevo = open('y_train_movil.csv', 'a') 
 	outfileNuevo.write(str(datosAnteriores))
 	outfileNuevo.close()
-	
 
 os.unlink('ProcesarDatos.pyc')
 
-run(host='localhost', port=8081)
+
+if __name__ == '__main__':
+	run(host='192.168.1.33', port=8081, debug=True, reloader=True)
